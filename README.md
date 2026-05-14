@@ -1,104 +1,65 @@
-cd # Desafio Técnico — Estágio em Ciência de Dados
-**FGV IBRE — Instituto Brasileiro de Economia**
+🔍 Motor de Busca Semântico: Notícias Econômicas (Desafio Técnico FGV IBRE)
+Este repositório contém a solução para o desafio técnico de Ciência de Dados, cujo objetivo é construir um mini motor de busca semântico aplicado a um corpus de notícias econômicas. O projeto foca em extração, limpeza de dados textuais não estruturados e recuperação de informações relevantes utilizando processamento de linguagem natural (NLP).
 
----
+🚀 Visão Geral do Pipeline
+O projeto foi dividido em dois scripts principais que cobrem as três etapas do desafio:
 
-## Contexto
+etapa1.py (Limpeza e Tratamento): Recebe o arquivo noticias_brutas.json e gera arquivos .txt limpos.
 
-O FGV IBRE produz indicadores econômicos de referência para o Brasil — como o IGP-M, o IPC e o ICC — e publica dezenas de notas técnicas por mês. Nesse volume de produção textual, a capacidade de **buscar e recuperar informação relevante** de forma eficiente é cada vez mais valiosa.
+etapa2.py (Geração de Embeddings e Busca): Transforma os textos em vetores, processa a query do usuário e retorna as 3 notícias mais relevantes baseadas em similaridade semântica.
 
-Neste desafio, você vai construir um **mini motor de busca semântico** aplicado a notícias econômicas. O objetivo não é implementar um sistema de produção, mas demonstrar que você sabe limpar dados textuais, aplicar modelos de linguagem e raciocinar sobre similaridade semântica.
+🧠 Decisões Técnicas e Arquitetura
+Etapa 1: Limpeza e Tratamento de Texto (etapa1.py)
+Para lidar com as "sujeiras" do formato HTML e caracteres especiais embutidos no JSON bruto:
 
----
+BeautifulSoup: Utilizado para fazer o parsing do HTML, removendo facilmente tags e extraindo apenas o conteúdo textual limpo.
 
-## Visão Geral
+Expressões Regulares (re): Aplicado o padrão re.sub(r"\s+", " ", ...) para normalizar espaços e quebras de linha excessivas, garantindo um texto coeso.
 
-O desafio está dividido em **três etapas encadeadas**:
+Armazenamento: Cada notícia foi salva em um arquivo de texto individual (.txt) nomeado com seu respectivo ID dentro da pasta dados/, facilitando a leitura iterativa na próxima etapa.
 
-```
-noticias_brutas.json  →  [Etapa 1: Limpeza]  →  dados_limpos
-                                                         ↓
-                                               [Etapa 2: Embeddings]
-                                                         ↓
-                                               [Etapa 3: Busca Semântica]
-```
+Etapas 2 e 3: Embeddings e Busca Semântica (etapa2.py)
+A lógica de busca foi construída para comparar o que o usuário pesquisa com a base de dados de forma semântica (pelo significado, não apenas por palavras-chave):
 
-Você deve entregar uma solução em python, além de um `README` explicando suas decisões.
+Modelo Escolhido (all-MiniLM-L6-v2): Utilizado através da biblioteca sentence-transformers. A escolha deste modelo se dá por ser extremamente leve, rápido de rodar localmente e altamente eficiente para tarefas de similaridade semântica em sentenças e pequenos parágrafos.
 
----
+Processo de Busca:
 
-## Dados
+Os textos limpos são carregados e convertidos em representações vetoriais (embeddings).
 
-O arquivo `dados/noticias_brutas.json` contém 20 notícias fictícias sobre a economia brasileira. Cada entrada tem a seguinte estrutura:
+A pesquisa do usuário (ex: "mudanças na taxa de juros") também é transformada em embedding.
 
-```json
-{
-  "id": 1,
-  "titulo": "...",
-  "texto": "texto com sujeiras diversas",
-  "data": "YYYY-MM-DD",
-  "fonte": "..."
-}
-```
+A comparação é feita utilizando o método de similaridade do próprio modelo.
 
-O campo `texto` contém intencionalmente diversos tipos de "sujeira":
-- Tags HTML (`<p>`, `<strong>`, `<br/>`, `<a href=...>`)
-- Entidades HTML (`&amp;`, `&nbsp;`, `&eacute;`, `&ccedil;`, etc.)
-- Múltiplas quebras de linha consecutivas
-- Espaços em excesso entre palavras
-- Timestamps e metadados embutidos no corpo do texto
-- Alguns artigos com conteúdo mínimo (casos extremos)
+Através da função torch.topk, o script identifica os 3 valores mais altos no tensor de similaridade.
 
----
+Os índices desses 3 maiores tensores são extraídos e convertidos para uma lista (lista_de_indices).
 
-## Etapa 1 — Limpeza e Tratamento de Texto
+Por fim, um laço for mapeia esses índices de volta para o array original de textos (texts), imprimindo na tela a pontuação de relevância e o conteúdo das notícias mais compatíveis com a busca.
 
-Transforme os textos brutos em texto limpo e estruturado, lidando com as imperfeições presentes no campo `texto`. Os dados tratados devem ser salvos localmente para uso nas etapas seguintes.
+⚙️ Como Executar o Projeto
+Certifique-se de ter o Python instalado. É recomendado o uso de um ambiente virtual (venv).
 
----
+1. Instale as dependências:
 
-## Etapa 2 — Geração de Embeddings
+Bash
+pip install beautifulsoup4 sentence-transformers torch
+2. Prepare o ambiente:
+Certifique-se de que o arquivo original noticias_brutas.json esteja dentro de uma pasta chamada dados/ na raiz do projeto.
 
-Utilize a biblioteca `sentence-transformers` para representar cada texto como um vetor numérico. No seu `README`, justifique o modelo escolhido.
+3. Execute a limpeza dos dados:
 
----
+Bash
+python etapa1.py
+Isso irá popular a pasta dados/ com os arquivos .txt limpos.
 
-## Etapa 3 — Motor de Busca Semântico
+4. Execute o motor de busca:
 
-Implemente uma busca que receba uma consulta em texto livre e retorne os artigos mais relevantes do corpus, com base em similaridade semântica. Valide seu motor com as queries abaixo:
+Bash
+python etapa2.py
+O script irá calcular as similaridades e imprimir no terminal as notícias mais relevantes para as queries configuradas.
 
-```
-"mudanças na taxa de juros"
-"mercado de trabalho e desemprego"
-"inflação e preços ao consumidor"
-```
+📊 Avaliação Qualitativa
+A abordagem utilizando o modelo all-MiniLM-L6-v2 demonstrou grande capacidade de conectar o termo pesquisado ao contexto real do texto. A conversão da pontuação de similaridade em tensores e o isolamento dos índices garantem que a recuperação da informação ocorra em tempo hábil e de forma escalável. Ao iterar diretamente sobre os índices extraídos via PyTorch, o motor atinge o objetivo de retornar resultados coerentes para queries complexas como "mercado de trabalho e desemprego" e "inflação e preços ao consumidor".
 
----
-
-## Entregáveis
-
-Crie um repositório público no GitHub com a sua solução contendo:
-
-- Código Python cobrindo as três etapas (organizado da forma que preferir)
-- O arquivo de dados limpos gerado na Etapa 1
-- Um `README.md` explicando suas decisões, como rodar o projeto e uma avaliação qualitativa dos resultados
-
-**A solução deve ser facilmente reproduzível:** qualquer pessoa deve conseguir clonar o repositório e executar o pipeline do zero sem dificuldades.
-
-> **Não é necessário** incluir o arquivo de embeddings no repositório se ele for muito grande. Basta garantir que o script da Etapa 2 seja reproduzível.
-
----
-
-## Instruções de Entrega
-
-1. Crie um repositório **público** no GitHub com a sua solução
-2. Certifique-se de que o repositório contém todos os entregáveis listados acima
-3. Preencha o formulário de entrega com seu nome, e-mail e o link do repositório:
-
-**👉 [Formulário de Entrega](https://forms.office.com/r/vuaGLA1qLy)**
-
-**Prazo:** conforme comunicado no processo seletivo.
-
----
-
-Boa sorte!
+Desenvolvido por Breno Nunes de Almeida GitHub: brenonunes96 
